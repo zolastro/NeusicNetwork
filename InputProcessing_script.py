@@ -3,7 +3,7 @@ import librosa
 import os
 import pickle
 import sys
-
+from mutagen.mp3 import MP3
 
 def readMfcc(audioPath, size, length):
     featuresArray = []
@@ -38,7 +38,7 @@ if (len(sys.argv) < 3):
     raise Exception("You must provide the path to the data and the output path\npython " + sys.argv[0] + " path_to_data output_path")
 
 path = sys.argv[1]
-sample_length = 1000
+sample_length = 5000
 
 label_dict ={
     "blues": 0,
@@ -54,6 +54,7 @@ label_dict ={
 
 }
 
+print("Getting training data...")
 
 inputs = []
 labels = []
@@ -63,13 +64,31 @@ for root, subdirs, files in os.walk(path):
         if filename.endswith("au"):
             c += 1
             file_path = os.path.join(root, filename)
-            #audio = AU(file_path)
-            #print("{}:{}".format(int(30/60),(int(30%60))))
-            print("{}%".format(c/len(files)))
+            print("{}%".format(100*c/len(files)))
             inputs.append(readMfcc(file_path,int(30*1000), sample_length))
-            for i in range(29):
+            for i in range(int(1000*30/sample_length)-1):
                 labels.append(getLabel(filename, label_dict))
 
+print("Getting test data...")
+
+inputs_test = []
+labels_test = []
+c = 0
+for root, subdirs, files in os.walk(path + '/test'):
+    for filename in files:
+        if filename.endswith("mp3"):
+            c += 1
+            file_path = os.path.join(root, filename)
+            print("{}%".format(100*c/len(files)))
+            inputs_test.append(readMfcc(file_path,30*1000, sample_length))
+            for i in range(int(1000*30/sample_length)-1):
+                labels_test.append(getLabel(filename, label_dict))
+
 output_path = sys.argv[2]
+print("Saving data in " + output_path)
 saveDataIn(output_path + "/inputs", inputs)
 saveDataIn(output_path + "/labels", labels)
+saveDataIn(output_path + "/test/inputs", inputs_test)
+saveDataIn(output_path + "/test/labels", labels_test)
+
+print("Done")
